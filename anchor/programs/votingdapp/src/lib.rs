@@ -24,6 +24,14 @@ pub mod votingdapp {
         Ok(())
     }
 
+    pub fn initialize_candidate(ctx: Context<InitializeCandidate>, candidate_name: String, _poll_id: u64) -> Result<()> {
+        
+        let candidate = &mut ctx.accounts.candidate;
+        candidate.candidate_name = candidate_name;
+        candidate.candidate_votes = 0;
+        Ok(())
+    }
+
 }
 
 #[derive(Accounts)]
@@ -33,8 +41,8 @@ pub struct InitializePoll<'info> {
     pub signer: Signer<'info>,
 
     #[account( // I can Create the account right here with this macro
-        init, // I make account automatically initialize here
-        payer = signer,
+        init, // creates the account if it doesn't exists
+        payer = signer, // `signer` pays for account rent & transaction fees
         space = 8 /*Anchor reserves 8 bytes */ + Poll::INIT_SPACE, // This comes from #[derive(InitSpace)] macro on Poll Struct
         seeds = [poll_id.to_le_bytes().as_ref()], // i use the pulled parameter here
 
@@ -47,10 +55,27 @@ pub struct InitializePoll<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CreateCandidate<'info> {
+#[instruction(candidate_name: String, poll_id: u64)] // I import them in this Struct scope from instruction function
+pub struct InitializeCandidate<'info> {
+    #[account(mut)]
     pub signer: Signer<'info>,
 
-    pub candidate_account: Account<'info, Candidate>,
+    #[account(
+        // Since i dont need to create it i just specify seeds and bump
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub poll: Account<'info, Poll>,
+
+    #[account(
+        init,
+        payer = signer,
+        space = 8 + Candidate::INIT_SPACE,
+        seeds = [poll_id.to_le_bytes().as_ref(), candidate_name.as_bytes()],
+        bump,
+    )]
+    pub candidate: Account<'info, Candidate>,
+    pub system_program: Program<'info, System>
 }
 
 
@@ -67,7 +92,9 @@ pub struct Poll {
 }
 
 #[account]
+#[derive(InitSpace)] // I use it when i init this account
 pub struct Candidate {
-    pub name: String,
-    pub votes_amount: u64,
+    #[max_len(100)]
+    pub candidate_name: String,
+    pub candidate_votes: u64,
 }

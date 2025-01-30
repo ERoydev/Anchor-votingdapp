@@ -32,22 +32,42 @@ const votingdappAddress = new PublicKey("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewy
 
 
 describe('votingdapp', () => {
-  it('Initialize Poll', async () => { 
+
+  let context;
+  let provider;
+  let VotingdappProgram: Program<Votingdapp>;
+
+  beforeAll(async () => { // Runs and sets these. We have them before every integration test
 
     // Check that StartAnchor code, i have provided extraPrograms here with the AddedProgram[] interface that require {name, programId}
-    const context = await startAnchor("", [{name: "votingdapp", programId: votingdappAddress}], []); // Context
+    context = await startAnchor("", [{name: "votingdapp", programId: votingdappAddress}], []); // Context
 
-	  const provider = new BankrunProvider(context); // Provider
+	  provider = new BankrunProvider(context); // Provider
 
     // I create the program object here
-    const VotingdappProgram = new Program<Votingdapp>(
+    VotingdappProgram = new Program<Votingdapp>(
       IDL,
       provider,
     );
+  })
+  
+  it('Initialize Poll', async () => { 
+
+    // I moved it in beforeAll()
+    // // Check that StartAnchor code, i have provided extraPrograms here with the AddedProgram[] interface that require {name, programId}
+    // context = await startAnchor("", [{name: "votingdapp", programId: votingdappAddress}], []); // Context
+
+	  // provider = new BankrunProvider(context); // Provider
+
+    // // I create the program object here
+    // const VotingdappProgram = new Program<Votingdapp>(
+    //   IDL,
+    //   provider,
+    // );
 
     // Above i Have everything Set-up to get started
 
-    await VotingdappProgram.methods.initializePoll  (
+    await VotingdappProgram.methods.initializePoll (
       new anchor.BN(1), // BN stands for Big Number
       "What is your favourite type of peanut butter?",
       new anchor.BN(0),
@@ -73,8 +93,47 @@ describe('votingdapp', () => {
 
     console.log(poll);
 
-    
+    // I conver achnor.BN to Number 
+    expect(poll.pollId.toNumber()).toEqual(1);
+    expect(poll.description.toString()).toEqual("What is your favourite type of peanut butter?");
+    expect(poll.pollStart.toNumber()).toEqual(0);
+    expect(poll.pollEnd.toNumber()).toEqual(1838238752);
+    expect(poll.pollStart.toNumber()).toBeLessThan(poll.pollEnd.toNumber());
     
   });
+
+  it('Initialize poll candidates', async () => {
+    await VotingdappProgram.methods.initializeCandidate (
+      "Crunchy",
+      new anchor.BN(1),
+    ).rpc();
+
+    await VotingdappProgram.methods.initializeCandidate (
+      "Smooth",
+      new anchor.BN(1),
+    ).rpc();
+
+    const [crunchyAddress] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer, 'le', 8 ), Buffer.from("Crunchy")],
+      votingdappAddress
+    )
+
+    const crunchyCandidate = await VotingdappProgram.account.candidate.fetch(crunchyAddress);
+    console.log(crunchyCandidate);
+    expect(crunchyCandidate.candidateVotes.toNumber()).toEqual(new anchor.BN(0).toNumber());
+
+    const [smoothAddress] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer, 'le', 8), Buffer.from("Smooth")],
+      votingdappAddress
+    )
+
+    const smoothCandidate = await VotingdappProgram.account.candidate.fetch(smoothAddress);
+    console.log(smoothCandidate);
+    expect(smoothCandidate.candidateVotes.toNumber()).toEqual(new anchor.BN(0).toNumber());
+  })
+
+  it('vote', async () => {
+
+  })
     
 });

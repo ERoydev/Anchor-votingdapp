@@ -7,7 +7,7 @@
 .yarn/install-state.gz
 
 
-# This caused me fatal error when git adding
+# This caused me fatal error when git adding will be recreated when i run `anchor test` command
 test-ledger/
 
 # testing
