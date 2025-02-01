@@ -5,6 +5,9 @@ import {Keypair, PublicKey} from '@solana/web3.js'
 
 /// MY CUSTOM CODE BELLOW
 
+// Remember that the test case get the code from tests/fixtures/votingdapp.so
+// So i need to take from target/deploy/votingdapp.so file and move it to tests/fixtures
+
 // https://github.com/kevinheavey/anchor-bankrun -> the tool i use to test, You can check the example and copy the approach with imports and test code
 
 // import methods from anchor-bankrum library
@@ -130,10 +133,23 @@ describe('votingdapp', () => {
     const smoothCandidate = await VotingdappProgram.account.candidate.fetch(smoothAddress);
     console.log(smoothCandidate);
     expect(smoothCandidate.candidateVotes.toNumber()).toEqual(new anchor.BN(0).toNumber());
+
   })
 
   it('vote', async () => {
+    await VotingdappProgram.methods.vote (
+      "Smooth",
+      new anchor.BN(1)
+    ).rpc();
 
+    const [smoothAddress] = PublicKey.findProgramAddressSync(
+      [new anchor.BN(1).toArrayLike(Buffer, 'le', 8 ), Buffer.from("Smooth")],
+      votingdappAddress
+    )
+  
+    const smoothCandidate = await VotingdappProgram.account.candidate.fetch(smoothAddress);
+    console.log(smoothCandidate);
+    expect(smoothCandidate.candidateVotes.toNumber()).toEqual(1);
   })
-    
+
 });

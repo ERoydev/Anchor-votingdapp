@@ -27,11 +27,42 @@ pub mod votingdapp {
     pub fn initialize_candidate(ctx: Context<InitializeCandidate>, candidate_name: String, _poll_id: u64) -> Result<()> {
         
         let candidate = &mut ctx.accounts.candidate;
+        let poll = &mut ctx.accounts.poll;
+        poll.candidate_amount += 1; 
         candidate.candidate_name = candidate_name;
         candidate.candidate_votes = 0;
         Ok(())
     }
 
+    pub fn vote(ctx: Context<Vote>, _candidate_name: String, _poll_id: u64) -> Result<()> {
+        let candidate = &mut ctx.accounts.candidate;
+        // Increment vote count
+        candidate.candidate_votes += 1;
+        Ok(())
+        
+    }
+
+}
+
+#[derive(Accounts)]
+#[instruction(candidate_name: String, poll_id: u64)]
+pub struct Vote<'info> {
+    pub signer: Signer<'info>,
+
+    #[account(
+        // Since i dont need to create it i just specify seeds and bump
+        seeds = [poll_id.to_le_bytes().as_ref()],
+        bump
+    )]
+    pub poll: Account<'info, Poll>,
+
+
+    #[account(
+        mut, // By default every account is immutable even if i borrow it as mutable so i need to specify that is mutable
+        seeds = [poll_id.to_le_bytes().as_ref(), candidate_name.as_bytes()],
+        bump,
+    )]
+    pub candidate: Account<'info, Candidate>,
 }
 
 #[derive(Accounts)]
@@ -61,6 +92,7 @@ pub struct InitializeCandidate<'info> {
     pub signer: Signer<'info>,
 
     #[account(
+        mut,
         // Since i dont need to create it i just specify seeds and bump
         seeds = [poll_id.to_le_bytes().as_ref()],
         bump
