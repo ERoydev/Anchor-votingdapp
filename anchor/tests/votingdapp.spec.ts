@@ -45,7 +45,7 @@ describe('votingdapp', () => {
     // Check that StartAnchor code, i have provided extraPrograms here with the AddedProgram[] interface that require {name, programId}
     context = await startAnchor("", [{name: "votingdapp", programId: votingdappAddress}], []); // Context
 
-	  provider = new BankrunProvider(context); // Provider
+	  provider = new BankrunProvider(context); // Provider Bankrun is used for tests its a test library
 
     // I create the program object here
     VotingdappProgram = new Program<Votingdapp>(
